@@ -46,7 +46,7 @@ public class BlogService {
         return blogRepository.findById(id).orElse(null);
     }
 
-    // ✅ create blog
+ // ✅ create blog
     public Blog createBlog(String title, String cardImage, List<String> sectionTypes, List<String> sectionContents, Long authorId) {
         if (sectionTypes == null || sectionTypes.isEmpty()) {
             throw new RuntimeException("Blog must have at least one section");
@@ -54,7 +54,7 @@ public class BlogService {
 
         Blog blog = new Blog();
         blog.setTitle(title);
-        blog.setCardImage(cardImage);
+        blog.setCardImage(cardImage); // should be "uploads/filename.jpg"
 
         List<Section> sections = new ArrayList<>();
         for (int i = 0; i < sectionTypes.size(); i++) {
@@ -68,6 +68,25 @@ public class BlogService {
         userRepository.findById(authorId).ifPresent(blog::setAuthor);
 
         return blogRepository.save(blog);
+    }
+
+    // ✅ delete blog + remove uploaded image
+    public boolean deleteBlog(Long id) {
+        Optional<Blog> blogOpt = blogRepository.findById(id);
+        if (blogOpt.isPresent()) {
+            Blog blog = blogOpt.get();
+            try {
+                if (blog.getCardImage() != null) {
+                    String filename = blog.getCardImage().replace("uploads/", "");
+                    Files.deleteIfExists(Paths.get("/home/uploads/" + filename));
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+            blogRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     // ✅ update blog (keep old image if none)
@@ -97,23 +116,6 @@ public class BlogService {
         return false;
     }
 
-    // ✅ delete blog + remove uploaded image
-    public boolean deleteBlog(Long id) {
-        Optional<Blog> blogOpt = blogRepository.findById(id);
-        if (blogOpt.isPresent()) {
-            Blog blog = blogOpt.get();
-            try {
-                if (blog.getCardImage() != null) {
-                    Files.deleteIfExists(Paths.get("src/main/resources/static/" + blog.getCardImage()));
-                }
-            } catch (Exception e) {
-                // ignore
-            }
-            blogRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
 
     // ✅ get blogs by author
     public List<Blog> getBlogsByAuthor(Long authorId) {
